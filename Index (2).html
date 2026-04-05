@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pinjam Material - Adam22</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+      min-height: 100vh;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    }
+    h2 { color: #1a73e8; text-align: center; margin-bottom: 30px; }
+    label { display: block; margin: 15px 0 8px; font-weight: 600; color: #333; }
+    input {
+      width: 100%;
+      padding: 12px 15px;
+      border: 2px solid #ddd;
+      border-radius: 8px;
+      font-size: 16px;
+      box-sizing: border-box;
+    }
+    input:focus { border-color: #1a73e8; outline: none; }
+    .item-row {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 12px;
+      background: #f8f9fa;
+      padding: 15px;
+      border-radius: 10px;
+      border: 1px solid #eee;
+      align-items: center;
+    }
+    .unit-input { max-width: 130px; }
+    button {
+      padding: 12px 20px;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      cursor: pointer;
+      margin: 5px 2px;
+    }
+    .add-btn { background: #34a853; color: white; }
+    .remove-btn { background: #ea4335; color: white; }
+    #submitBtn {
+      background: #1a73e8;
+      color: white;
+      width: 100%;
+      padding: 16px;
+      font-size: 18px;
+      margin-top: 25px;
+    }
+    .message {
+      margin-top: 20px;
+      padding: 15px;
+      border-radius: 8px;
+      text-align: center;
+      font-weight: 500;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>📋 MATERIALS USAGE FORM</h2>
+
+    <label>Nama Pengguna *</label>
+    <input type="text" id="nama" placeholder="Masukkan nama woi" required>
+
+    <label>Tujuan *</label>
+    <input type="text" id="tujuan" placeholder="Contoh: Baiki rumah, Projek Site A" required>
+
+    <h3>Barang yang Dipinjam</h3>
+
+    <datalist id="materialList"></datalist>
+
+    <div id="itemsContainer">
+      <div class="item-row">
+        <input type="text" class="material" list="materialList" placeholder="Nama Material" required>
+        <input type="number" class="kuantiti" min="1" placeholder="Kuantiti" required>
+        <input type="text" class="unit unit-input" placeholder="Unit (pcs, kg, liter)">
+        <button type="button" class="remove-btn" onclick="removeRow(this)">Buang</button>
+      </div>
+    </div>
+
+    <button type="button" class="add-btn" onclick="addItemRow()">+ Tambah Barang</button>
+    <button id="submitBtn" onclick="submitForm()">📤 Hantar Pinjaman</button>
+
+    <div id="message" class="message"></div>
+  </div>
+
+  <script>
+    const webAppUrl = "https://script.google.com/macros/s/AKfycbyP8rKrQFT4Ho0g5lyI51dQZ-VBA-a9iKmELX_qk1D6xKkZ_bYwL9PYxgEKU09qO04f/exec";
+
+    function addItemRow() {
+      const container = document.getElementById('itemsContainer');
+      const row = document.createElement('div');
+      row.className = 'item-row';
+      row.innerHTML = `
+        <input type="text" class="material" list="materialList" placeholder="Nama Material" required>
+        <input type="number" class="kuantiti" min="1" placeholder="Kuantiti" required>
+        <input type="text" class="unit unit-input" placeholder="Unit (pcs, kg, liter)">
+        <button type="button" class="remove-btn" onclick="removeRow(this)">Buang</button>
+      `;
+      container.appendChild(row);
+    }
+
+    function removeRow(btn) {
+      if (document.querySelectorAll('.item-row').length > 1) {
+        btn.parentElement.remove();
+      } else {
+        alert("Sekurang-kurangnya satu barang diperlukan.");
+      }
+    }
+
+    async function submitForm() { /* ... kod submitForm anda yang sama ... */ 
+      // (Saya kekalkan kod submitForm yang asal anda, cuma ringkaskan di sini)
+      const nama = document.getElementById('nama').value.trim();
+      const tujuan = document.getElementById('tujuan').value.trim();
+      const messageDiv = document.getElementById('message');
+
+      if (!nama || !tujuan) {
+        showMessage("Sila isi Nama dan Tujuan.", "red");
+        return;
+      }
+
+      const items = [];
+      document.querySelectorAll('.item-row').forEach(row => {
+        const material = row.querySelector('.material').value.trim();
+        const kuantiti = parseFloat(row.querySelector('.kuantiti').value);
+        const unit = row.querySelector('.unit').value.trim();
+        if (material && kuantiti > 0) items.push({ material, kuantiti, unit });
+      });
+
+      if (items.length === 0) {
+        showMessage("Sila isi sekurang-kurangnya satu material dan kuantiti.", "red");
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('nama', nama);
+      formData.append('tujuan', tujuan);
+      formData.append('items', JSON.stringify(items));
+
+      showMessage("Sedang menghantar...", "#1a73e8");
+
+      try {
+        const response = await fetch(webAppUrl, { method: 'POST', body: formData });
+        const result = await response.text();
+        if (result.includes("Berjaya") || result.includes("Success")) {
+          showMessage(result, "green");
+          setTimeout(() => location.reload(), 2500);
+        } else {
+          showMessage(result, "red");
+        }
+      } catch (error) {
+        showMessage("Ralat sambungan. Sila semak internet atau Web App.", "red");
+      }
+    }
+
+    function showMessage(text, color) {
+      const msg = document.getElementById('message');
+      msg.style.color = color;
+      msg.textContent = text;
+    }
+
+    // ================== FUNGSI UTAMA: LOAD SEMUA MATERIAL ==================
+    async function loadMaterialList() {
+      try {
+        const response = await fetch(webAppUrl + "?action=getMaterials");
+        const materials = await response.json();
+
+        const datalist = document.getElementById('materialList');
+        datalist.innerHTML = '';
+
+        materials.forEach(mat => {
+          if (mat && mat.toString().trim() !== '') {
+            const option = document.createElement('option');
+            option.value = mat.toString().trim();
+            datalist.appendChild(option);
+          }
+        });
+
+        console.log(`✅ ${materials.length} nama material berjaya dimuatkan`);
+      } catch (error) {
+        console.error("Gagal load material:", error);
+        showMessage("Gagal memuat senarai material dari sheet Stock.", "red");
+      }
+    }
+
+    window.addEventListener('load', loadMaterialList);
+
+    // Tekan Enter untuk submit
+    document.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter' && !e.target.tagName === 'TEXTAREA') submitForm();
+    });
+  </script>
+</body>
+</html>
