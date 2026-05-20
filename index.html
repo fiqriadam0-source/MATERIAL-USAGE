@@ -5,34 +5,54 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Pinjam Material - Adam22</title>
   <style>
+    * { box-sizing: border-box; }
+    
     body {
       font-family: 'Segoe UI', Arial, sans-serif;
       margin: 0;
-      padding: 20px;
+      padding: 15px;
       background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
       min-height: 100vh;
     }
+
     .container {
       max-width: 800px;
       margin: 0 auto;
       background: white;
-      padding: 30px;
+      padding: 20px;
       border-radius: 12px;
       box-shadow: 0 10px 30px rgba(0,0,0,0.1);
     }
-    h2 { color: #1a73e8; text-align: center; margin-bottom: 30px; }
-    label { display: block; margin: 15px 0 8px; font-weight: 600; color: #333; }
+
+    h2 { 
+      color: #1a73e8; 
+      text-align: center; 
+      margin: 10px 0 25px; 
+    }
+
+    label { 
+      display: block; 
+      margin: 15px 0 8px; 
+      font-weight: 600; 
+      color: #333; 
+    }
+
     input {
       width: 100%;
       padding: 12px 15px;
       border: 2px solid #ddd;
       border-radius: 8px;
       font-size: 16px;
-      box-sizing: border-box;
     }
-    input:focus { border-color: #1a73e8; outline: none; }
+
+    input:focus { 
+      border-color: #1a73e8; 
+      outline: none; 
+    }
+
     .item-row {
       display: flex;
+      flex-wrap: wrap;
       gap: 10px;
       margin-bottom: 12px;
       background: #f8f9fa;
@@ -41,31 +61,61 @@
       border: 1px solid #eee;
       align-items: center;
     }
-    .unit-input { max-width: 130px; }
-    button {
-      padding: 12px 20px;
+
+    .item-row input {
+      flex: 1;
+      min-width: 120px;
+    }
+
+    .kuantiti { max-width: 110px; }
+    .unit { max-width: 130px; }
+
+    .remove-btn {
+      background: #ea4335;
+      color: white;
+      padding: 10px 14px;
       border: none;
       border-radius: 8px;
-      font-size: 16px;
       cursor: pointer;
-      margin: 5px 2px;
+      flex-shrink: 0;
     }
-    .add-btn { background: #34a853; color: white; }
-    .remove-btn { background: #ea4335; color: white; }
+
+    .add-btn { 
+      background: #34a853; 
+      color: white; 
+      width: 100%;
+      padding: 14px;
+      font-size: 16px;
+      margin: 15px 0;
+    }
+
     #submitBtn {
       background: #1a73e8;
       color: white;
       width: 100%;
       padding: 16px;
       font-size: 18px;
-      margin-top: 25px;
+      margin-top: 10px;
     }
+
     .message {
       margin-top: 20px;
       padding: 15px;
       border-radius: 8px;
       text-align: center;
       font-weight: 500;
+    }
+
+    /* Responsive untuk telefon */
+    @media (max-width: 576px) {
+      .item-row {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .remove-btn {
+        width: 100%;
+        margin-top: 8px;
+      }
     }
   </style>
 </head>
@@ -87,7 +137,7 @@
       <div class="item-row">
         <input type="text" class="material" list="materialList" placeholder="Nama Material" required>
         <input type="number" class="kuantiti" min="1" placeholder="Kuantiti" required>
-        <input type="text" class="unit unit-input" placeholder="Unit (pcs, kg, liter)">
+        <input type="text" class="unit" placeholder="Unit (pcs, kg, liter)">
         <button type="button" class="remove-btn" onclick="removeRow(this)">Buang</button>
       </div>
     </div>
@@ -108,7 +158,7 @@
       row.innerHTML = `
         <input type="text" class="material" list="materialList" placeholder="Nama Material" required>
         <input type="number" class="kuantiti" min="1" placeholder="Kuantiti" required>
-        <input type="text" class="unit unit-input" placeholder="Unit (pcs, kg, liter)">
+        <input type="text" class="unit" placeholder="Unit (pcs, kg, liter)">
         <button type="button" class="remove-btn" onclick="removeRow(this)">Buang</button>
       `;
       container.appendChild(row);
@@ -122,14 +172,14 @@
       }
     }
 
-    async function submitForm() { /* ... kod submitForm anda yang sama ... */ 
-      // (Saya kekalkan kod submitForm yang asal anda, cuma ringkaskan di sini)
+    async function submitForm() {
       const nama = document.getElementById('nama').value.trim();
       const tujuan = document.getElementById('tujuan').value.trim();
       const messageDiv = document.getElementById('message');
 
       if (!nama || !tujuan) {
-        showMessage("Sila isi Nama dan Tujuan.", "red");
+        messageDiv.style.color = "red";
+        messageDiv.textContent = "Sila isi Nama dan Tujuan.";
         return;
       }
 
@@ -138,42 +188,47 @@
         const material = row.querySelector('.material').value.trim();
         const kuantiti = parseFloat(row.querySelector('.kuantiti').value);
         const unit = row.querySelector('.unit').value.trim();
-        if (material && kuantiti > 0) items.push({ material, kuantiti, unit });
+        if (material && kuantiti > 0) {
+          items.push({ material, kuantiti, unit });
+        }
       });
 
       if (items.length === 0) {
-        showMessage("Sila isi sekurang-kurangnya satu material dan kuantiti.", "red");
+        messageDiv.style.color = "red";
+        messageDiv.textContent = "Sila isi sekurang-kurangnya satu material dan kuantiti.";
         return;
       }
+
+      messageDiv.style.color = "#1a73e8";
+      messageDiv.textContent = "Sedang menghantar...";
 
       const formData = new FormData();
       formData.append('nama', nama);
       formData.append('tujuan', tujuan);
       formData.append('items', JSON.stringify(items));
 
-      showMessage("Sedang menghantar...", "#1a73e8");
-
       try {
-        const response = await fetch(webAppUrl, { method: 'POST', body: formData });
+        const response = await fetch(webAppUrl, { 
+          method: 'POST', 
+          body: formData 
+        });
         const result = await response.text();
+
         if (result.includes("Berjaya") || result.includes("Success")) {
-          showMessage(result, "green");
+          messageDiv.style.color = "green";
+          messageDiv.textContent = result || "Pinjaman berjaya dihantar!";
           setTimeout(() => location.reload(), 2500);
         } else {
-          showMessage(result, "red");
+          messageDiv.style.color = "red";
+          messageDiv.textContent = result || "Ralat semasa menghantar.";
         }
       } catch (error) {
-        showMessage("Ralat sambungan. Sila semak internet atau Web App.", "red");
+        messageDiv.style.color = "red";
+        messageDiv.textContent = "Ralat sambungan. Semak internet anda.";
       }
     }
 
-    function showMessage(text, color) {
-      const msg = document.getElementById('message');
-      msg.style.color = color;
-      msg.textContent = text;
-    }
-
-    // ================== FUNGSI UTAMA: LOAD SEMUA MATERIAL ==================
+    // Load senarai material
     async function loadMaterialList() {
       try {
         const response = await fetch(webAppUrl + "?action=getMaterials");
@@ -189,20 +244,12 @@
             datalist.appendChild(option);
           }
         });
-
-        console.log(`✅ ${materials.length} nama material berjaya dimuatkan`);
       } catch (error) {
         console.error("Gagal load material:", error);
-        showMessage("Gagal memuat senarai material dari sheet Stock.", "red");
       }
     }
 
     window.addEventListener('load', loadMaterialList);
-
-    // Tekan Enter untuk submit
-    document.addEventListener('keypress', (e) => {
-      if (e.key === 'Enter' && !e.target.tagName === 'TEXTAREA') submitForm();
-    });
   </script>
 </body>
 </html>
