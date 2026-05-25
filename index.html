@@ -3,253 +3,699 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Pinjam Material - Adam22</title>
+  <title>Sistem Rekod Penggunaan Material</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600;700&family=IBM+Plex+Serif:wght@600&display=swap" rel="stylesheet">
   <style>
+    :root {
+      --brand: #0f3d57;
+      --brand-strong: #0b2f43;
+      --accent: #cc8f34;
+      --surface: #ffffff;
+      --surface-soft: #f5f8fb;
+      --surface-strong: #eaf1f6;
+      --danger: #b3261e;
+      --success: #1f6f43;
+      --text: #1e2a34;
+      --muted: #586774;
+      --border: #cfdce6;
+      --shadow: 0 20px 40px rgba(8, 47, 67, 0.14);
+    }
+
     * { box-sizing: border-box; }
-    
+
     body {
-      font-family: 'Segoe UI', Arial, sans-serif;
       margin: 0;
-      padding: 15px;
-      background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
       min-height: 100vh;
+      font-family: "Source Sans 3", "Segoe UI", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(1100px 480px at 0% -8%, rgba(15, 61, 87, 0.16), transparent 74%),
+        radial-gradient(950px 420px at 100% 0%, rgba(204, 143, 52, 0.15), transparent 68%),
+        linear-gradient(180deg, #eff4f8 0%, #edf3f7 100%);
+      padding: 28px 14px 38px;
     }
 
-    .container {
-      max-width: 800px;
+    .page {
+      max-width: 930px;
       margin: 0 auto;
-      background: white;
-      padding: 20px;
-      border-radius: 12px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+      background: var(--surface);
+      border: 1px solid rgba(11, 47, 67, 0.1);
+      border-radius: 16px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      animation: pageEnter 420ms ease;
     }
 
-    h2 { 
-      color: #1a73e8; 
-      text-align: center; 
-      margin: 10px 0 25px; 
+    .header {
+      background: linear-gradient(120deg, var(--brand-strong) 0%, var(--brand) 80%);
+      color: #fff;
+      padding: 24px 26px;
     }
 
-    label { 
-      display: block; 
-      margin: 15px 0 8px; 
-      font-weight: 600; 
-      color: #333; 
+    .header h1 {
+      margin: 0;
+      font-size: 1.7rem;
+      line-height: 1.2;
+      font-family: "IBM Plex Serif", Georgia, serif;
+      letter-spacing: 0.1px;
     }
 
-    input {
+    .header p {
+      margin: 8px 0 0;
+      font-size: 1rem;
+      color: rgba(255, 255, 255, 0.9);
+    }
+
+    .content {
+      padding: 22px;
+    }
+
+    .identity-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+
+    .field {
+      margin: 0;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 6px;
+      font-weight: 700;
+      color: var(--brand-strong);
+      font-size: 0.95rem;
+      letter-spacing: 0.1px;
+    }
+
+    input,
+    select,
+    .dropdown-input {
       width: 100%;
-      padding: 12px 15px;
-      border: 2px solid #ddd;
-      border-radius: 8px;
-      font-size: 16px;
+      padding: 11px 12px;
+      border-radius: 9px;
+      border: 1px solid var(--border);
+      background: #fff;
+      font-size: 1rem;
+      color: var(--text);
+      transition: border-color 180ms ease, box-shadow 180ms ease;
     }
 
-    input:focus { 
-      border-color: #1a73e8; 
-      outline: none; 
+    input:focus,
+    select:focus,
+    .dropdown-input:focus {
+      outline: none;
+      border-color: var(--brand);
+      box-shadow: 0 0 0 3px rgba(15, 61, 87, 0.13);
+    }
+
+    .section-title {
+      margin: 2px 0 10px;
+      font-size: 1.08rem;
+      font-weight: 700;
+      color: var(--brand-strong);
+      letter-spacing: 0.1px;
+    }
+
+    .section-subtitle {
+      margin: 0 0 14px;
+      color: var(--muted);
+      font-size: 0.95rem;
     }
 
     .item-row {
-      display: flex;
-      flex-wrap: wrap;
+      display: grid;
+      grid-template-columns: minmax(240px, 1.2fr) 120px 130px 110px;
       gap: 10px;
-      margin-bottom: 12px;
-      background: #f8f9fa;
-      padding: 15px;
-      border-radius: 10px;
-      border: 1px solid #eee;
       align-items: center;
+      margin-bottom: 10px;
+      padding: 12px;
+      background: var(--surface-soft);
+      border: 1px solid #dce6ee;
+      border-radius: 10px;
+      animation: rowEnter 260ms ease;
     }
 
-    .item-row input {
-      flex: 1;
-      min-width: 120px;
+    .row-header {
+      display: grid;
+      grid-template-columns: minmax(240px, 1.2fr) 120px 130px 110px;
+      gap: 10px;
+      margin-bottom: 8px;
+      color: var(--muted);
+      font-size: 0.84rem;
+      font-weight: 600;
+      letter-spacing: 0.25px;
+      text-transform: uppercase;
+      padding: 0 3px;
     }
 
-    .kuantiti { max-width: 110px; }
-    .unit { max-width: 130px; }
+    .dropdown {
+      position: relative;
+    }
 
-    .remove-btn {
-      background: #ea4335;
-      color: white;
-      padding: 10px 14px;
+    .dropdown-menu {
+      position: absolute;
+      top: calc(100% + 6px);
+      left: 0;
+      right: 0;
+      max-height: 240px;
+      overflow-y: auto;
+      background: #fff;
+      border: 1px solid #c8d8e4;
+      border-radius: 9px;
+      box-shadow: 0 14px 28px rgba(11, 47, 67, 0.16);
+      z-index: 30;
+      padding: 6px;
+    }
+
+    .dropdown-item {
+      width: 100%;
+      text-align: left;
+      border-radius: 6px;
       border: none;
-      border-radius: 8px;
+      background: transparent;
+      color: var(--text);
+      font-size: 0.95rem;
+      padding: 8px 9px;
+      font-weight: 500;
       cursor: pointer;
-      flex-shrink: 0;
     }
 
-    .add-btn { 
-      background: #34a853; 
-      color: white; 
-      width: 100%;
-      padding: 14px;
-      font-size: 16px;
-      margin: 15px 0;
+    .dropdown-item:hover {
+      background: #e9f1f7;
     }
 
-    #submitBtn {
-      background: #1a73e8;
-      color: white;
+    .dropdown-empty {
+      color: var(--muted);
+      font-size: 0.92rem;
+      padding: 8px 9px;
+    }
+
+    button {
+      border: none;
+      border-radius: 9px;
+      padding: 11px 13px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 120ms ease, filter 120ms ease;
+    }
+
+    button:hover { filter: brightness(1.04); }
+    button:active { transform: translateY(1px); }
+
+    .btn-remove {
+      background: #faefee;
+      color: #9d3028;
+      border: 1px solid rgba(179, 38, 30, 0.2);
+    }
+
+    .btn-add {
+      margin-top: 6px;
+      margin-bottom: 8px;
+      background: #eef4f8;
+      color: var(--brand-strong);
+      border: 1px solid rgba(8, 55, 76, 0.15);
+    }
+
+    .btn-submit {
       width: 100%;
-      padding: 16px;
-      font-size: 18px;
-      margin-top: 10px;
+      margin-top: 4px;
+      padding-top: 13px;
+      padding-bottom: 13px;
+      background: linear-gradient(120deg, var(--brand-strong) 0%, var(--brand) 100%);
+      color: #fff;
+      letter-spacing: 0.2px;
+    }
+
+    .btn-submit[disabled] {
+      opacity: 0.7;
+      cursor: not-allowed;
     }
 
     .message {
-      margin-top: 20px;
-      padding: 15px;
-      border-radius: 8px;
-      text-align: center;
-      font-weight: 500;
+      margin-top: 14px;
+      border-radius: 10px;
+      padding: 12px 13px;
+      font-weight: 600;
+      border: 1px solid transparent;
+      display: none;
     }
 
-    /* Responsive untuk telefon */
-    @media (max-width: 576px) {
-      .item-row {
-        flex-direction: column;
-        align-items: stretch;
+    .message.show { display: block; }
+    .message.info {
+      color: #0b4f6c;
+      border-color: rgba(11, 79, 108, 0.2);
+      background: #e9f4f9;
+    }
+    .message.success {
+      color: var(--success);
+      border-color: rgba(31, 111, 67, 0.2);
+      background: #eaf7ef;
+    }
+    .message.error {
+      color: var(--danger);
+      border-color: rgba(179, 38, 30, 0.24);
+      background: #fbeceb;
+    }
+
+    .hint {
+      margin-top: 10px;
+      font-size: 0.92rem;
+      color: var(--muted);
+    }
+
+    .meta-footer {
+      margin-top: 18px;
+      padding-top: 14px;
+      border-top: 1px solid #dce6ee;
+      display: grid;
+      gap: 12px;
+    }
+
+    .meta-label {
+      margin: 0 0 6px;
+      font-size: 0.84rem;
+      font-weight: 700;
+      letter-spacing: 0.2px;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+
+    .developer-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--brand-strong);
+      text-decoration: none;
+      font-weight: 600;
+      border: 1px solid #d5e2eb;
+      background: #f9fcfe;
+      border-radius: 999px;
+      padding: 7px 12px;
+      width: fit-content;
+    }
+
+    .developer-link:hover {
+      background: #eef5fa;
+    }
+
+    .techstack-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .techstack-badges img {
+      height: 24px;
+      border-radius: 5px;
+      border: 1px solid rgba(11, 47, 67, 0.1);
+    }
+
+    .actions {
+      display: flex;
+      justify-content: flex-end;
+      margin-bottom: 10px;
+    }
+
+    @keyframes pageEnter {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes rowEnter {
+      from { opacity: 0; transform: translateY(5px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (max-width: 740px) {
+      .identity-grid {
+        grid-template-columns: 1fr;
       }
-      .remove-btn {
+
+      .row-header {
+        display: none;
+      }
+
+      .item-row {
+        grid-template-columns: 1fr;
+      }
+
+      .btn-remove {
         width: 100%;
-        margin-top: 8px;
+      }
+
+      .actions {
+        justify-content: stretch;
+      }
+
+      .btn-add {
+        width: 100%;
       }
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h2>📋 MATERIALS USAGE FORM</h2>
+  <div id="root"></div>
 
-    <label>Nama Pengguna *</label>
-    <input type="text" id="nama" placeholder="Masukkan nama woi" required>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-    <label>Tujuan *</label>
-    <input type="text" id="tujuan" placeholder="Contoh: Baiki rumah, Projek Site A" required>
+  <script type="text/babel">
+    const { useEffect, useMemo, useRef, useState } = React;
 
-    <h3>Barang yang Dipinjam</h3>
+    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyP8rKrQFT4Ho0g5lyI51dQZ-VBA-a9iKmELX_qk1D6xKkZ_bYwL9PYxgEKU09qO04f/exec";
 
-    <datalist id="materialList"></datalist>
-
-    <div id="itemsContainer">
-      <div class="item-row">
-        <input type="text" class="material" list="materialList" placeholder="Nama Material" required>
-        <input type="number" class="kuantiti" min="1" placeholder="Kuantiti" required>
-        <input type="text" class="unit" placeholder="Unit (pcs, kg, liter)">
-        <button type="button" class="remove-btn" onclick="removeRow(this)">Buang</button>
-      </div>
-    </div>
-
-    <button type="button" class="add-btn" onclick="addItemRow()">+ Tambah Barang</button>
-    <button id="submitBtn" onclick="submitForm()">📤 Hantar Pinjaman</button>
-
-    <div id="message" class="message"></div>
-  </div>
-
-  <script>
-    const webAppUrl = "https://script.google.com/macros/s/AKfycbyP8rKrQFT4Ho0g5lyI51dQZ-VBA-a9iKmELX_qk1D6xKkZ_bYwL9PYxgEKU09qO04f/exec";
-
-    function addItemRow() {
-      const container = document.getElementById('itemsContainer');
-      const row = document.createElement('div');
-      row.className = 'item-row';
-      row.innerHTML = `
-        <input type="text" class="material" list="materialList" placeholder="Nama Material" required>
-        <input type="number" class="kuantiti" min="1" placeholder="Kuantiti" required>
-        <input type="text" class="unit" placeholder="Unit (pcs, kg, liter)">
-        <button type="button" class="remove-btn" onclick="removeRow(this)">Buang</button>
-      `;
-      container.appendChild(row);
+    function createEmptyItem() {
+      return { material: "", kuantiti: "", unit: "" };
     }
 
-    function removeRow(btn) {
-      if (document.querySelectorAll('.item-row').length > 1) {
-        btn.parentElement.remove();
-      } else {
-        alert("Sekurang-kurangnya satu barang diperlukan.");
-      }
-    }
+    const UNIT_OPTIONS = [
+      "KG",
+      "G",
+      "TON",
+      "PCS",
+      "UNIT",
+      "LITER",
+      "ML",
+      "METER",
+      "CM",
+      "ROLL",
+      "BOX",
+      "SET",
+      "BAG",
+      "BUNDLE",
+      "PACK",
+      "PAIR",
+      "DOZEN"
+    ];
 
-    async function submitForm() {
-      const nama = document.getElementById('nama').value.trim();
-      const tujuan = document.getElementById('tujuan').value.trim();
-      const messageDiv = document.getElementById('message');
+    function MaterialDropdown({ value, options, onChange, placeholder }) {
+      const [query, setQuery] = useState(value || "");
+      const [isOpen, setIsOpen] = useState(false);
+      const containerRef = useRef(null);
 
-      if (!nama || !tujuan) {
-        messageDiv.style.color = "red";
-        messageDiv.textContent = "Sila isi Nama dan Tujuan.";
-        return;
-      }
+      useEffect(() => {
+        setQuery(value || "");
+      }, [value]);
 
-      const items = [];
-      document.querySelectorAll('.item-row').forEach(row => {
-        const material = row.querySelector('.material').value.trim();
-        const kuantiti = parseFloat(row.querySelector('.kuantiti').value);
-        const unit = row.querySelector('.unit').value.trim();
-        if (material && kuantiti > 0) {
-          items.push({ material, kuantiti, unit });
-        }
-      });
-
-      if (items.length === 0) {
-        messageDiv.style.color = "red";
-        messageDiv.textContent = "Sila isi sekurang-kurangnya satu material dan kuantiti.";
-        return;
-      }
-
-      messageDiv.style.color = "#1a73e8";
-      messageDiv.textContent = "Sedang menghantar...";
-
-      const formData = new FormData();
-      formData.append('nama', nama);
-      formData.append('tujuan', tujuan);
-      formData.append('items', JSON.stringify(items));
-
-      try {
-        const response = await fetch(webAppUrl, { 
-          method: 'POST', 
-          body: formData 
-        });
-        const result = await response.text();
-
-        if (result.includes("Berjaya") || result.includes("Success")) {
-          messageDiv.style.color = "green";
-          messageDiv.textContent = result || "Pinjaman berjaya dihantar!";
-          setTimeout(() => location.reload(), 2500);
-        } else {
-          messageDiv.style.color = "red";
-          messageDiv.textContent = result || "Ralat semasa menghantar.";
-        }
-      } catch (error) {
-        messageDiv.style.color = "red";
-        messageDiv.textContent = "Ralat sambungan. Semak internet anda.";
-      }
-    }
-
-    // Load senarai material
-    async function loadMaterialList() {
-      try {
-        const response = await fetch(webAppUrl + "?action=getMaterials");
-        const materials = await response.json();
-
-        const datalist = document.getElementById('materialList');
-        datalist.innerHTML = '';
-
-        materials.forEach(mat => {
-          if (mat && mat.toString().trim() !== '') {
-            const option = document.createElement('option');
-            option.value = mat.toString().trim();
-            datalist.appendChild(option);
+      useEffect(() => {
+        function handleClickOutside(event) {
+          if (containerRef.current && !containerRef.current.contains(event.target)) {
+            setIsOpen(false);
           }
-        });
-      } catch (error) {
-        console.error("Gagal load material:", error);
+        }
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+      }, []);
+
+      const filteredOptions = useMemo(() => {
+        const search = (query || "").trim().toLowerCase();
+        if (!search) {
+          return options.slice(0, 12);
+        }
+        return options
+          .filter((option) => option.toLowerCase().includes(search))
+          .slice(0, 12);
+      }, [query, options]);
+
+      function handleInputChange(event) {
+        const nextValue = event.target.value;
+        setQuery(nextValue);
+        onChange(nextValue);
+        setIsOpen(true);
       }
+
+      function handleSelect(selectedValue) {
+        setQuery(selectedValue);
+        onChange(selectedValue);
+        setIsOpen(false);
+      }
+
+      return (
+        <div className="dropdown" ref={containerRef}>
+          <input
+            className="dropdown-input"
+            type="text"
+            value={query}
+            placeholder={placeholder}
+            onFocus={() => setIsOpen(true)}
+            onChange={handleInputChange}
+            autoComplete="off"
+            required
+          />
+
+          {isOpen && (
+            <div className="dropdown-menu">
+              {filteredOptions.length === 0 ? (
+                <div className="dropdown-empty">Tiada padanan. Anda boleh taip material baharu.</div>
+              ) : (
+                filteredOptions.map((option, index) => (
+                  <button
+                    type="button"
+                    key={option + index}
+                    className="dropdown-item"
+                    onClick={() => handleSelect(option)}
+                  >
+                    {option}
+                  </button>
+                ))
+              )}
+            </div>
+          )}
+        </div>
+      );
     }
 
-    window.addEventListener('load', loadMaterialList);
+    function App() {
+      const [nama, setNama] = useState("");
+      const [tujuan, setTujuan] = useState("");
+      const [items, setItems] = useState([createEmptyItem()]);
+      const [materials, setMaterials] = useState([]);
+      const [isSubmitting, setIsSubmitting] = useState(false);
+      const [message, setMessage] = useState({ text: "", type: "info" });
+
+      useEffect(() => {
+        async function loadMaterialList() {
+          try {
+            const response = await fetch(WEB_APP_URL + "?action=getMaterials");
+            const data = await response.json();
+            if (Array.isArray(data)) {
+              const cleanData = data
+                .map((item) => String(item || "").trim())
+                .filter((item) => item !== "");
+              setMaterials(cleanData);
+            }
+          } catch (error) {
+            console.error("Gagal memuatkan senarai material:", error);
+          }
+        }
+        loadMaterialList();
+      }, []);
+
+      function updateItem(index, field, value) {
+        setItems((prev) =>
+          prev.map((item, i) => (i === index ? { ...item, [field]: value } : item))
+        );
+      }
+
+      function addRow() {
+        setItems((prev) => [...prev, createEmptyItem()]);
+      }
+
+      function removeRow(index) {
+        setItems((prev) => {
+          if (prev.length === 1) {
+            setMessage({ text: "Sekurang-kurangnya satu material perlu disenaraikan.", type: "error" });
+            return prev;
+          }
+          return prev.filter((_, i) => i !== index);
+        });
+      }
+
+      async function handleSubmit(event) {
+        event.preventDefault();
+
+        if (!nama.trim() || !tujuan.trim()) {
+          setMessage({ text: "Sila lengkapkan nama pengguna dan tujuan penggunaan.", type: "error" });
+          return;
+        }
+
+        const validItems = items
+          .map((item) => ({
+            material: item.material.trim(),
+            kuantiti: Number(item.kuantiti),
+            unit: item.unit.trim(),
+          }))
+          .filter((item) => item.material && item.kuantiti > 0);
+
+        if (validItems.length === 0) {
+          setMessage({ text: "Sila isi sekurang-kurangnya satu material dengan kuantiti yang sah.", type: "error" });
+          return;
+        }
+
+        setIsSubmitting(true);
+        setMessage({ text: "Permohonan sedang dihantar. Sila tunggu sebentar...", type: "info" });
+
+        const formData = new FormData();
+        formData.append("nama", nama.trim());
+        formData.append("tujuan", tujuan.trim());
+        formData.append("items", JSON.stringify(validItems));
+
+        try {
+          const response = await fetch(WEB_APP_URL, {
+            method: "POST",
+            body: formData,
+          });
+          const result = await response.text();
+
+          if (result.includes("Berjaya") || result.includes("Success")) {
+            setMessage({ text: result || "Rekod penggunaan material berjaya dihantar.", type: "success" });
+            setNama("");
+            setTujuan("");
+            setItems([createEmptyItem()]);
+          } else {
+            setMessage({ text: result || "Permohonan tidak berjaya diproses.", type: "error" });
+          }
+        } catch (error) {
+          setMessage({ text: "Ralat sambungan. Sila semak capaian internet dan cuba lagi.", type: "error" });
+        } finally {
+          setIsSubmitting(false);
+        }
+      }
+
+      return (
+        <main className="page">
+          <header className="header">
+            <h1>Borang Rekod Penggunaan Material</h1>
+            <p>Sistem rekod pinjaman dan penggunaan bahan kerja</p>
+          </header>
+
+          <section className="content">
+            <form onSubmit={handleSubmit}>
+              <div className="identity-grid">
+                <div className="field">
+                  <label htmlFor="nama">Nama Pengguna</label>
+                  <input
+                    id="nama"
+                    type="text"
+                    placeholder="Contoh: Ahmad Bin Salleh"
+                    value={nama}
+                    onChange={(event) => setNama(event.target.value)}
+                    required
+                  />
+                </div>
+
+                <div className="field">
+                  <label htmlFor="tujuan">Tujuan Penggunaan</label>
+                  <input
+                    id="tujuan"
+                    type="text"
+                    placeholder="Contoh: Penyelenggaraan Site A"
+                    value={tujuan}
+                    onChange={(event) => setTujuan(event.target.value)}
+                    required
+                  />
+                </div>
+              </div>
+
+              <p className="section-title">Butiran Material</p>
+              <p className="section-subtitle">Gunakan carian pada dropdown untuk memilih material dengan cepat.</p>
+
+              <div className="row-header">
+                <div>Material</div>
+                <div>Kuantiti</div>
+                <div>Unit</div>
+                <div>Tindakan</div>
+              </div>
+
+              {items.map((item, index) => (
+                <div className="item-row" key={index}>
+                  <MaterialDropdown
+                    value={item.material}
+                    options={materials}
+                    onChange={(value) => updateItem(index, "material", value)}
+                    placeholder="Pilih atau taip nama material"
+                  />
+                  <input
+                    type="number"
+                    min="1"
+                    placeholder="Kuantiti"
+                    value={item.kuantiti}
+                    onChange={(event) => updateItem(index, "kuantiti", event.target.value)}
+                    required
+                  />
+                  <select
+                    value={item.unit}
+                    onChange={(event) => updateItem(index, "unit", event.target.value)}
+                  >
+                    <option value="">Pilih Unit</option>
+                    {UNIT_OPTIONS.map((unit) => (
+                      <option key={unit} value={unit}>{unit}</option>
+                    ))}
+                  </select>
+                  <button type="button" className="btn-remove" onClick={() => removeRow(index)}>
+                    Buang Baris
+                  </button>
+                </div>
+              ))}
+
+              <div className="actions">
+                <button type="button" className="btn-add" onClick={addRow}>
+                  Tambah Material
+                </button>
+              </div>
+
+              <button className="btn-submit" type="submit" disabled={isSubmitting}>
+                {isSubmitting ? "Sedang Dihantar..." : "Hantar Rekod"}
+              </button>
+
+              <div className={`message ${message.text ? "show" : ""} ${message.type}`}>
+                {message.text}
+              </div>
+
+              <p className="hint">Pastikan semua maklumat yang dihantar adalah tepat untuk tujuan rekod stor.</p>
+
+              <div className="meta-footer">
+                <div>
+                  <p className="meta-label">Developer</p>
+                  <a
+                    className="developer-link"
+                    href="https://github.com/fiqriadam0-source"
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                      <path d="M12 .5C5.65.5.5 5.65.5 12a11.5 11.5 0 0 0 7.86 10.92c.58.11.79-.25.79-.56v-2.03c-3.2.7-3.88-1.54-3.88-1.54-.53-1.33-1.28-1.68-1.28-1.68-1.05-.72.08-.71.08-.71 1.16.08 1.76 1.19 1.76 1.19 1.03 1.76 2.71 1.25 3.37.96.11-.75.4-1.25.72-1.54-2.55-.29-5.24-1.27-5.24-5.66 0-1.25.44-2.27 1.18-3.08-.12-.29-.51-1.46.11-3.03 0 0 .96-.31 3.15 1.18a10.9 10.9 0 0 1 5.74 0c2.19-1.49 3.15-1.18 3.15-1.18.62 1.57.23 2.74.11 3.03.74.81 1.18 1.83 1.18 3.08 0 4.4-2.69 5.37-5.25 5.65.41.36.77 1.08.77 2.18v3.23c0 .31.21.68.79.56A11.5 11.5 0 0 0 23.5 12C23.5 5.65 18.35.5 12 .5Z"/>
+                    </svg>
+                    fiqriadam0-source
+                  </a>
+                </div>
+
+                <div>
+                  <p className="meta-label">Tech Stack</p>
+                  <div className="techstack-badges">
+                    <img src="https://img.shields.io/badge/HTML5-E34F26?style=for-the-badge&logo=html5&logoColor=white" alt="HTML5" />
+                    <img src="https://img.shields.io/badge/CSS3-1572B6?style=for-the-badge&logo=css3&logoColor=white" alt="CSS3" />
+                    <img src="https://img.shields.io/badge/JavaScript-F7DF1E?style=for-the-badge&logo=javascript&logoColor=111" alt="JavaScript" />
+                    <img src="https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB" alt="React" />
+                    <img src="https://img.shields.io/badge/Babel-F9DC3E?style=for-the-badge&logo=babel&logoColor=222" alt="Babel" />
+                    <img src="https://img.shields.io/badge/Google_Apps_Script-34A853?style=for-the-badge&logo=googleappsscript&logoColor=white" alt="Google Apps Script" />
+                  </div>
+                </div>
+              </div>
+            </form>
+          </section>
+        </main>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById("root")).render(<App />);
   </script>
 </body>
 </html>
