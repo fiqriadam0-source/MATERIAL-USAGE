@@ -37,9 +37,17 @@
       padding: 28px 14px 38px;
     }
 
-    .page {
-      max-width: 930px;
+    .layout {
+      max-width: 1280px;
       margin: 0 auto;
+      display: grid;
+      grid-template-columns: minmax(0, 930px) 320px;
+      gap: 16px;
+      align-items: start;
+      justify-content: center;
+    }
+
+    .page {
       background: var(--surface);
       border: 1px solid rgba(11, 47, 67, 0.1);
       border-radius: 16px;
@@ -70,6 +78,95 @@
 
     .content {
       padding: 22px;
+    }
+
+    .main-form {
+      min-width: 0;
+    }
+
+    .history-panel {
+      border: 1px solid #dce6ee;
+      border-radius: 12px;
+      background: linear-gradient(180deg, #f8fcff 0%, #f2f8fc 100%);
+      padding: 12px;
+      position: sticky;
+      top: 16px;
+    }
+
+    .history-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
+    .history-title {
+      margin: 0;
+      font-size: 0.95rem;
+      font-weight: 800;
+      color: var(--brand-strong);
+      letter-spacing: 0.15px;
+    }
+
+    .btn-refresh {
+      padding: 6px 10px;
+      font-size: 0.8rem;
+      border-radius: 7px;
+      background: #eaf2f8;
+      color: var(--brand-strong);
+      border: 1px solid rgba(11, 47, 67, 0.14);
+    }
+
+    .history-hint {
+      margin: 0 0 9px;
+      font-size: 0.82rem;
+      color: var(--muted);
+    }
+
+    .history-scroll {
+      max-height: 440px;
+      overflow: auto;
+      border: 1px solid #d4e2ec;
+      border-radius: 8px;
+      background: #fff;
+    }
+
+    .history-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.8rem;
+    }
+
+    .history-table th,
+    .history-table td {
+      padding: 7px 8px;
+      text-align: left;
+      border-bottom: 1px solid #ecf2f7;
+      vertical-align: top;
+      white-space: nowrap;
+    }
+
+    .history-table th {
+      background: #f3f8fc;
+      color: #3a5161;
+      font-size: 0.74rem;
+      text-transform: uppercase;
+      letter-spacing: 0.2px;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+
+    .history-empty {
+      padding: 10px;
+      color: var(--muted);
+      font-size: 0.82rem;
+    }
+
+    .history-error {
+      color: #9d3028;
+      font-weight: 700;
     }
 
     .identity-grid {
@@ -129,7 +226,7 @@
 
     .item-row {
       display: grid;
-      grid-template-columns: minmax(240px, 1.2fr) 120px 130px 110px;
+      grid-template-columns: minmax(240px, 1.2fr) 170px 130px 110px;
       gap: 10px;
       align-items: center;
       margin-bottom: 10px;
@@ -142,7 +239,7 @@
 
     .row-header {
       display: grid;
-      grid-template-columns: minmax(240px, 1.2fr) 120px 130px 110px;
+      grid-template-columns: minmax(240px, 1.2fr) 170px 130px 110px;
       gap: 10px;
       margin-bottom: 8px;
       color: var(--muted);
@@ -322,6 +419,33 @@
       margin-bottom: 10px;
     }
 
+    .qty-cell {
+      display: grid;
+      gap: 4px;
+    }
+
+    .balance-note {
+      font-size: 0.78rem;
+      line-height: 1.3;
+      font-weight: 600;
+    }
+
+    .balance-loading {
+      color: #0b4f6c;
+    }
+
+    .balance-ok {
+      color: #1f6f43;
+    }
+
+    .balance-warning {
+      color: #b3261e;
+    }
+
+    .balance-error {
+      color: #9d3028;
+    }
+
     @keyframes pageEnter {
       from { opacity: 0; transform: translateY(8px); }
       to { opacity: 1; transform: translateY(0); }
@@ -333,6 +457,15 @@
     }
 
     @media (max-width: 740px) {
+      .layout {
+        grid-template-columns: 1fr;
+        max-width: 930px;
+      }
+
+      .history-panel {
+        position: static;
+      }
+
       .identity-grid {
         grid-template-columns: 1fr;
       }
@@ -369,10 +502,21 @@
   <script type="text/babel">
     const { useEffect, useMemo, useRef, useState } = React;
 
-    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyP8rKrQFT4Ho0g5lyI51dQZ-VBA-a9iKmELX_qk1D6xKkZ_bYwL9PYxgEKU09qO04f/exec";
+    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwXC8y3wc-IL23cHtgVriOtjeH0GsaxEXRsttsuRkilLry7xZ-WWstvLlo6b1WH3E0k/exec";
+
+    let rowCounter = 0;
 
     function createEmptyItem() {
-      return { material: "", kuantiti: "", unit: "" };
+      rowCounter += 1;
+      return {
+        id: rowCounter,
+        material: "",
+        kuantiti: "",
+        unit: "",
+        balance: null,
+        balanceUnit: "",
+        balanceStatus: "idle",
+      };
     }
 
     const UNIT_OPTIONS = [
@@ -477,8 +621,113 @@
       const [tujuan, setTujuan] = useState("");
       const [items, setItems] = useState([createEmptyItem()]);
       const [materials, setMaterials] = useState([]);
+      const [usageHistory, setUsageHistory] = useState([]);
+      const [historyStatus, setHistoryStatus] = useState("idle");
       const [isSubmitting, setIsSubmitting] = useState(false);
       const [message, setMessage] = useState({ text: "", type: "info" });
+      const balanceDebounceRef = useRef({});
+
+      function parseBalancePayload(payload) {
+        const toNumber = (value) => {
+          if (typeof value === "number" && Number.isFinite(value)) {
+            return value;
+          }
+          if (typeof value === "string") {
+            const normalized = value.replace(",", ".").trim();
+            const num = Number(normalized);
+            return Number.isFinite(num) ? num : null;
+          }
+          return null;
+        };
+
+        if (typeof payload === "number") {
+          return { balance: payload, balanceUnit: "" };
+        }
+
+        if (typeof payload === "string") {
+          const parsed = toNumber(payload);
+          return { balance: parsed, balanceUnit: "" };
+        }
+
+        if (payload && typeof payload === "object") {
+          const balance = toNumber(
+            payload.balance ?? payload.baki ?? payload.stok ?? payload.stock ?? payload.quantity ?? payload.kuantiti
+          );
+          const balanceUnit = String(payload.unit ?? "").trim();
+          return { balance, balanceUnit };
+        }
+
+        return { balance: null, balanceUnit: "" };
+      }
+
+      function updateItemById(itemId, updater) {
+        setItems((prev) =>
+          prev.map((item) => {
+            if (item.id !== itemId) {
+              return item;
+            }
+            const next = typeof updater === "function" ? updater(item) : updater;
+            return { ...item, ...next };
+          })
+        );
+      }
+
+      function normalizeHistoryRows(payload) {
+        if (!Array.isArray(payload)) {
+          return [];
+        }
+
+        return payload
+          .map((row) => {
+            if (row && typeof row === "object" && !Array.isArray(row)) {
+              return {
+                date: String(row.tarikh ?? row.date ?? row.timestamp ?? "").trim(),
+                name: String(row.nama ?? row.name ?? "").trim(),
+                material: String(row.material ?? row.item ?? "").trim(),
+                qty: String(row.kuantiti ?? row.quantity ?? row.qty ?? "").trim(),
+                unit: String(row.unit ?? "").trim(),
+              };
+            }
+
+            if (Array.isArray(row)) {
+              return {
+                date: String(row[0] ?? "").trim(),
+                name: String(row[1] ?? "").trim(),
+                material: String(row[2] ?? "").trim(),
+                qty: String(row[3] ?? "").trim(),
+                unit: String(row[4] ?? "").trim(),
+              };
+            }
+
+            return null;
+          })
+          .filter((row) => row && (row.material || row.name || row.qty))
+          .slice(0, 40);
+      }
+
+      async function loadUsageHistory() {
+        setHistoryStatus("loading");
+        try {
+          const response = await fetch(`${WEB_APP_URL}?action=getUsageHistory`);
+
+          let payload;
+          const contentType = response.headers.get("content-type") || "";
+          if (contentType.includes("application/json")) {
+            payload = await response.json();
+          } else {
+            const text = await response.text();
+            payload = JSON.parse(text);
+          }
+
+          const normalized = normalizeHistoryRows(payload);
+          setUsageHistory(normalized);
+          setHistoryStatus("ok");
+        } catch (error) {
+          setUsageHistory([]);
+          setHistoryStatus("error");
+          console.error("Gagal memuatkan usage history:", error);
+        }
+      }
 
       useEffect(() => {
         async function loadMaterialList() {
@@ -496,25 +745,133 @@
           }
         }
         loadMaterialList();
+        loadUsageHistory();
       }, []);
 
-      function updateItem(index, field, value) {
-        setItems((prev) =>
-          prev.map((item, i) => (i === index ? { ...item, [field]: value } : item))
-        );
+      useEffect(() => {
+        return () => {
+          Object.values(balanceDebounceRef.current).forEach((timerId) => clearTimeout(timerId));
+        };
+      }, []);
+
+      async function fetchItemBalance(itemId, materialName) {
+        const material = String(materialName || "").trim();
+        if (!material) {
+          updateItemById(itemId, {
+            balance: null,
+            balanceUnit: "",
+            balanceStatus: "idle",
+          });
+          return;
+        }
+
+        const normalizedMaterial = material.toLowerCase();
+
+        updateItemById(itemId, {
+          balance: null,
+          balanceUnit: "",
+          balanceStatus: "loading",
+        });
+
+        try {
+          const response = await fetch(
+            `${WEB_APP_URL}?action=getBalanceByMaterial&material=${encodeURIComponent(material)}`
+          );
+
+          let payload;
+          const contentType = response.headers.get("content-type") || "";
+          if (contentType.includes("application/json")) {
+            payload = await response.json();
+          } else {
+            const text = await response.text();
+            try {
+              payload = JSON.parse(text);
+            } catch {
+              payload = text;
+            }
+          }
+
+          const { balance, balanceUnit } = parseBalancePayload(payload);
+          if (!Number.isFinite(balance)) {
+            throw new Error("Balance format not supported");
+          }
+
+          setItems((prev) =>
+            prev.map((item) => {
+              if (item.id !== itemId) {
+                return item;
+              }
+              if (String(item.material || "").trim().toLowerCase() !== normalizedMaterial) {
+                return item;
+              }
+              return {
+                ...item,
+                balance,
+                balanceUnit,
+                balanceStatus: "ok",
+              };
+            })
+          );
+        } catch (error) {
+          setItems((prev) =>
+            prev.map((item) => {
+              if (item.id !== itemId) {
+                return item;
+              }
+              if (String(item.material || "").trim().toLowerCase() !== normalizedMaterial) {
+                return item;
+              }
+              return {
+                ...item,
+                balance: null,
+                balanceUnit: "",
+                balanceStatus: "error",
+              };
+            })
+          );
+        }
+      }
+
+      function scheduleBalanceLookup(itemId, materialName) {
+        if (balanceDebounceRef.current[itemId]) {
+          clearTimeout(balanceDebounceRef.current[itemId]);
+        }
+
+        balanceDebounceRef.current[itemId] = setTimeout(() => {
+          fetchItemBalance(itemId, materialName);
+        }, 360);
+      }
+
+      function updateItem(itemId, field, value) {
+        updateItemById(itemId, (item) => {
+          if (field === "material") {
+            return {
+              material: value,
+              balance: null,
+              balanceUnit: "",
+              balanceStatus: "idle",
+            };
+          }
+          return { [field]: value };
+        });
       }
 
       function addRow() {
         setItems((prev) => [...prev, createEmptyItem()]);
       }
 
-      function removeRow(index) {
+      function removeRow(itemId) {
+        if (balanceDebounceRef.current[itemId]) {
+          clearTimeout(balanceDebounceRef.current[itemId]);
+          delete balanceDebounceRef.current[itemId];
+        }
+
         setItems((prev) => {
           if (prev.length === 1) {
             setMessage({ text: "Sekurang-kurangnya satu material perlu disenaraikan.", type: "error" });
             return prev;
           }
-          return prev.filter((_, i) => i !== index);
+          return prev.filter((item) => item.id !== itemId);
         });
       }
 
@@ -536,6 +893,34 @@
 
         if (validItems.length === 0) {
           setMessage({ text: "Sila isi sekurang-kurangnya satu material dengan kuantiti yang sah.", type: "error" });
+          return;
+        }
+
+        const pendingBalanceCheck = items.find(
+          (item) => item.material.trim() && item.balanceStatus === "loading"
+        );
+        if (pendingBalanceCheck) {
+          setMessage({ text: "Sila tunggu semakan baki material selesai sebelum hantar rekod.", type: "info" });
+          return;
+        }
+
+        const exceededItem = items.find((item) => {
+          const requestedQty = Number(item.kuantiti);
+          return (
+            item.material.trim() &&
+            requestedQty > 0 &&
+            item.balanceStatus === "ok" &&
+            Number.isFinite(item.balance) &&
+            requestedQty > item.balance
+          );
+        });
+
+        if (exceededItem) {
+          const unitLabel = exceededItem.balanceUnit || exceededItem.unit || "unit";
+          setMessage({
+            text: `Kuantiti melebihi baki untuk ${exceededItem.material}. Baki semasa: ${exceededItem.balance} ${unitLabel}.`,
+            type: "error",
+          });
           return;
         }
 
@@ -570,14 +955,15 @@
       }
 
       return (
-        <main className="page">
-          <header className="header">
-            <h1>Borang Rekod Penggunaan Material</h1>
-            <p>Sistem rekod pinjaman dan penggunaan bahan kerja</p>
-          </header>
+        <main className="layout">
+          <section className="page">
+            <header className="header">
+              <h1>Borang Rekod Penggunaan Material</h1>
+              <p>Sistem rekod pinjaman dan penggunaan bahan kerja</p>
+            </header>
 
-          <section className="content">
-            <form onSubmit={handleSubmit}>
+            <section className="content">
+              <form className="main-form" onSubmit={handleSubmit}>
               <div className="identity-grid">
                 <div className="field">
                   <label htmlFor="nama">Nama Pengguna</label>
@@ -614,32 +1000,48 @@
                 <div>Tindakan</div>
               </div>
 
-              {items.map((item, index) => (
-                <div className="item-row" key={index}>
+              {items.map((item) => (
+                <div className="item-row" key={item.id}>
                   <MaterialDropdown
                     value={item.material}
                     options={materials}
-                    onChange={(value) => updateItem(index, "material", value)}
+                    onChange={(value) => {
+                      updateItem(item.id, "material", value);
+                      scheduleBalanceLookup(item.id, value);
+                    }}
                     placeholder="Pilih atau taip nama material"
                   />
-                  <input
-                    type="number"
-                    min="1"
-                    placeholder="Kuantiti"
-                    value={item.kuantiti}
-                    onChange={(event) => updateItem(index, "kuantiti", event.target.value)}
-                    required
-                  />
+                  <div className="qty-cell">
+                    <input
+                      type="number"
+                      min="1"
+                      placeholder="Kuantiti"
+                      value={item.kuantiti}
+                      onChange={(event) => updateItem(item.id, "kuantiti", event.target.value)}
+                      required
+                    />
+                    {item.material.trim() && item.balanceStatus === "loading" && (
+                      <div className="balance-note balance-loading">Menyemak baki semasa...</div>
+                    )}
+                    {item.material.trim() && item.balanceStatus === "ok" && (
+                      <div className={`balance-note ${Number(item.kuantiti || 0) > item.balance ? "balance-warning" : "balance-ok"}`}>
+                        Baki tersedia: {item.balance} {item.balanceUnit || item.unit || ""}
+                      </div>
+                    )}
+                    {item.material.trim() && item.balanceStatus === "error" && (
+                      <div className="balance-note balance-error">Baki tidak dapat disemak secara masa nyata.</div>
+                    )}
+                  </div>
                   <select
                     value={item.unit}
-                    onChange={(event) => updateItem(index, "unit", event.target.value)}
+                    onChange={(event) => updateItem(item.id, "unit", event.target.value)}
                   >
                     <option value="">Pilih Unit</option>
                     {UNIT_OPTIONS.map((unit) => (
                       <option key={unit} value={unit}>{unit}</option>
                     ))}
                   </select>
-                  <button type="button" className="btn-remove" onClick={() => removeRow(index)}>
+                  <button type="button" className="btn-remove" onClick={() => removeRow(item.id)}>
                     Buang Baris
                   </button>
                 </div>
@@ -689,8 +1091,56 @@
                   </div>
                 </div>
               </div>
-            </form>
+              </form>
+            </section>
           </section>
+
+          <aside className="history-panel" aria-label="Rekod penggunaan terkini">
+            <div className="history-head">
+              <p className="history-title">Usage History</p>
+              <button
+                type="button"
+                className="btn-refresh"
+                onClick={loadUsageHistory}
+                disabled={historyStatus === "loading"}
+              >
+                {historyStatus === "loading" ? "Memuat..." : "Refresh"}
+              </button>
+            </div>
+
+            <p className="history-hint">Maklumat tambahan (optional) untuk rujukan pantas.</p>
+
+            <div className="history-scroll">
+              {historyStatus === "error" ? (
+                <div className="history-empty history-error">Gagal memuatkan usage history.</div>
+              ) : usageHistory.length === 0 ? (
+                <div className="history-empty">
+                  {historyStatus === "loading" ? "Sedang memuatkan usage history..." : "Tiada data usage history."}
+                </div>
+              ) : (
+                <table className="history-table">
+                  <thead>
+                    <tr>
+                      <th>Tarikh</th>
+                      <th>Nama</th>
+                      <th>Material</th>
+                      <th>Kuantiti</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {usageHistory.map((row, index) => (
+                      <tr key={`${row.date}-${row.name}-${row.material}-${index}`}>
+                        <td>{row.date || "-"}</td>
+                        <td>{row.name || "-"}</td>
+                        <td>{row.material || "-"}</td>
+                        <td>{row.qty || "-"} {row.unit || ""}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          </aside>
         </main>
       );
     }
