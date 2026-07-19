@@ -35,6 +35,7 @@
         radial-gradient(950px 420px at 100% 0%, rgba(204, 143, 52, 0.15), transparent 68%),
         linear-gradient(180deg, #eff4f8 0%, #edf3f7 100%);
       padding: 28px 14px 38px;
+      overflow-x: hidden;
     }
 
     .layout {
@@ -222,6 +223,39 @@
       margin: 0 0 14px;
       color: var(--muted);
       font-size: 0.95rem;
+    }
+
+    .install-callout {
+      margin: 0 0 14px;
+      padding: 12px;
+      border-radius: 11px;
+      border: 1px solid #d4e1eb;
+      background: linear-gradient(180deg, #f8fcff 0%, #f1f7fb 100%);
+      display: grid;
+      gap: 7px;
+    }
+
+    .install-title {
+      margin: 0;
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--brand-strong);
+    }
+
+    .install-copy {
+      margin: 0;
+      font-size: 0.88rem;
+      color: var(--muted);
+      line-height: 1.35;
+    }
+
+    .btn-install {
+      justify-self: start;
+      background: #e5eef5;
+      color: var(--brand-strong);
+      border: 1px solid rgba(8, 55, 76, 0.18);
+      font-size: 0.9rem;
+      padding: 9px 12px;
     }
 
     .item-row {
@@ -456,7 +490,7 @@
       to { opacity: 1; transform: translateY(0); }
     }
 
-    @media (max-width: 740px) {
+    @media (max-width: 1024px) {
       .layout {
         grid-template-columns: 1fr;
         max-width: 930px;
@@ -465,11 +499,9 @@
       .history-panel {
         position: static;
       }
+    }
 
-      .identity-grid {
-        grid-template-columns: 1fr;
-      }
-
+    @media (max-width: 860px) {
       .row-header {
         display: none;
       }
@@ -488,6 +520,51 @@
 
       .btn-add {
         width: 100%;
+      }
+    }
+
+    @media (max-width: 740px) {
+      body {
+        padding: 16px 10px 24px;
+      }
+
+      .header {
+        padding: 18px 16px;
+      }
+
+      .header h1 {
+        font-size: 1.35rem;
+      }
+
+      .content {
+        padding: 16px;
+      }
+
+      .layout {
+        max-width: 930px;
+      }
+
+      .history-panel,
+      .history-scroll {
+        max-width: 100%;
+      }
+
+      .identity-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .history-table {
+        font-size: 0.76rem;
+      }
+
+      .history-table th,
+      .history-table td {
+        white-space: normal;
+      }
+
+      .btn-install {
+        width: 100%;
+        justify-self: stretch;
       }
     }
   </style>
@@ -623,6 +700,10 @@
       const [historyStatus, setHistoryStatus] = useState("idle");
       const [isSubmitting, setIsSubmitting] = useState(false);
       const [message, setMessage] = useState({ text: "", type: "info" });
+      const [deferredInstallPrompt, setDeferredInstallPrompt] = useState(null);
+      const [showInstallCta, setShowInstallCta] = useState(false);
+      const [isIosDevice, setIsIosDevice] = useState(false);
+      const [isStandaloneMode, setIsStandaloneMode] = useState(false);
       const balanceDebounceRef = useRef({});
 
       function parseBalancePayload(payload) {
@@ -744,6 +825,40 @@
         }
         loadMaterialList();
         loadUsageHistory();
+      }, []);
+
+      useEffect(() => {
+        const ua = window.navigator.userAgent || "";
+        const ios = /iphone|ipad|ipod/i.test(ua);
+        const standalone = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
+
+        setIsIosDevice(ios);
+        setIsStandaloneMode(Boolean(standalone));
+
+        if (ios && !standalone) {
+          setShowInstallCta(true);
+        }
+
+        function onBeforeInstallPrompt(event) {
+          event.preventDefault();
+          setDeferredInstallPrompt(event);
+          setShowInstallCta(true);
+        }
+
+        function onAppInstalled() {
+          setDeferredInstallPrompt(null);
+          setShowInstallCta(false);
+          setIsStandaloneMode(true);
+          setMessage({ text: "Aplikasi ditambah ke Home Screen dengan berjaya.", type: "success" });
+        }
+
+        window.addEventListener("beforeinstallprompt", onBeforeInstallPrompt);
+        window.addEventListener("appinstalled", onAppInstalled);
+
+        return () => {
+          window.removeEventListener("beforeinstallprompt", onBeforeInstallPrompt);
+          window.removeEventListener("appinstalled", onAppInstalled);
+        };
       }, []);
 
       useEffect(() => {
@@ -952,6 +1067,30 @@
         }
       }
 
+      async function handleInstallClick() {
+        if (deferredInstallPrompt) {
+          deferredInstallPrompt.prompt();
+          const choice = await deferredInstallPrompt.userChoice;
+
+          if (choice.outcome === "accepted") {
+            setShowInstallCta(false);
+            setMessage({ text: "Aplikasi akan muncul seperti app selepas ditambah ke Home Screen.", type: "success" });
+          } else {
+            setMessage({ text: "Anda masih boleh tambah app ini dari menu pelayar bila-bila masa.", type: "info" });
+          }
+
+          setDeferredInstallPrompt(null);
+          return;
+        }
+
+        if (isIosDevice) {
+          setMessage({
+            text: "iPhone/iPad: tekan butang Share di Safari, kemudian pilih 'Add to Home Screen'.",
+            type: "info",
+          });
+        }
+      }
+
       return (
         <main className="layout">
           <section className="page">
@@ -962,6 +1101,24 @@
 
             <section className="content">
               <form className="main-form" onSubmit={handleSubmit}>
+              {!isStandaloneMode && showInstallCta && (
+                <div className="install-callout" role="status" aria-live="polite">
+                  <p className="install-title">Akses pantas seperti aplikasi</p>
+                  <p className="install-copy">
+                    {isIosDevice
+                      ? "Untuk iPhone/iPad, gunakan Safari dan pilih Share > Add to Home Screen."
+                      : "Tambah ke Home Screen supaya sistem ini terbuka seperti aplikasi penuh tanpa bar alamat."}
+                  </p>
+                  <button
+                    type="button"
+                    className="btn-install"
+                    onClick={handleInstallClick}
+                  >
+                    {deferredInstallPrompt ? "Tambah ke Home Screen" : "Cara Tambah ke Home Screen"}
+                  </button>
+                </div>
+              )}
+
               <div className="identity-grid">
                 <div className="field">
                   <label htmlFor="nama">Nama Pengguna</label>
@@ -1144,6 +1301,14 @@
     }
 
     ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("./sw.js").catch((error) => {
+          console.error("Gagal daftar service worker:", error);
+        });
+      });
+    }
   </script>
 </body>
 </html>
