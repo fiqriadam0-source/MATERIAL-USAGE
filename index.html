@@ -1095,8 +1095,8 @@
         <main className="layout">
           <section className="page">
             <header className="header">
-              <h1>BORANG PENGGUNAAN BAHAN GUNA HABIS</h1>
-              <p>Sistem penggunaan bahan kerja</p>
+              <h1>BORANG PEMOHONAN BAHAN GUNA HABIS</h1>
+              <p>SISTEM REKOD BAHAN KERJA</p>
             </header>
 
             <section className="content">
@@ -1121,7 +1121,7 @@
 
               <div className="identity-grid">
                 <div className="field">
-                  <label htmlFor="nama">Nama Pengguna</label>
+                  <label htmlFor="nama">NAMA PEMOHON</label>
                   <input
                     id="nama"
                     type="text"
@@ -1133,7 +1133,7 @@
                 </div>
 
                 <div className="field">
-                  <label htmlFor="tujuan">Tujuan Penggunaan</label>
+                  <label htmlFor="tujuan">TUJUAN PERMOHONAN</label>
                   <input
                     id="tujuan"
                     type="text"
@@ -1156,6 +1156,7 @@
               </div>
 
               {items.map((item) => (
+           <p className="section-title">KUANTITI</p>
                 <div className="item-row" key={item.id}>
                   <MaterialDropdown
                     value={item.material}
