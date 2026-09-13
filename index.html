@@ -590,6 +590,7 @@
         material: "",
         kuantiti: "",
         unit: "",
+        saiz: "",
         balance: null,
         balanceUnit: "",
         balanceStatus: "idle",
@@ -613,6 +614,10 @@
       "PAIR",
       "DOZEN"
     ];
+
+    const SIZE_OPTIONS = [
+  "20mm",
+];
 
     function MaterialDropdown({ value, options, onChange, placeholder }) {
       const [query, setQuery] = useState(value || "");
