@@ -1006,6 +1006,7 @@
             material: item.material.trim(),
             kuantiti: Number(item.kuantiti),
             unit: item.unit.trim(),
+            saiz: item.saiz.trim(),
           }))
           .filter((item) => item.material && item.kuantiti > 0);
 
@@ -1180,6 +1181,15 @@
                       onChange={(event) => updateItem(item.id, "kuantiti", event.target.value)}
                       required
                     />
+                    <select
+                      value={item.saiz}
+                      onChange={(event) => updateItem(item.id, "saiz", event.target.value)}
+                    >
+                      <option value="">Pilih Saiz</option>
+                      {SIZE_OPTIONS.map((size) => (
+                        <option key={size} value={size}>{size}</option>
+                      ))}
+                    </select>
                     {item.material.trim() && item.balanceStatus === "loading" && (
                       <div className="balance-note balance-loading">Menyemak baki semasa...</div>
                     )}
