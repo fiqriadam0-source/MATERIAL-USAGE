@@ -591,6 +591,7 @@
         kuantiti: "",
         unit: "",
         saiz: "",
+        availableSizes: [],
         balance: null,
         balanceUnit: "",
         balanceStatus: "idle",
@@ -615,9 +616,6 @@
       "DOZEN"
     ];
 
-    const SIZE_OPTIONS = [
-  "20mm",
-];
 
     function MaterialDropdown({ value, options, onChange, placeholder }) {
       const [query, setQuery] = useState(value || "");
@@ -882,6 +880,45 @@
           });
           return;
         }
+        async function fetchSizesByMaterial(itemId, materialName) {
+  const material = String(materialName || "").trim();
+  
+  // Reset saiz & availableSizes
+  updateItemById(itemId, {
+    saiz: "",
+    availableSizes: [],
+  });
+
+  if (!material) return;
+
+  try {
+    const response = await fetch(
+      `\( {WEB_APP_URL}?action=getSizesByMaterial&material= \){encodeURIComponent(material)}`
+    );
+
+    let payload;
+    const contentType = response.headers.get("content-type") || "";
+    if (contentType.includes("application/json")) {
+      payload = await response.json();
+    } else {
+      const text = await response.text();
+      payload = JSON.parse(text);
+    }
+
+    const sizes = Array.isArray(payload)
+      ? payload.map(s => String(s || "").trim()).filter(Boolean)
+      : [];
+
+    updateItemById(itemId, {
+      availableSizes: sizes,
+    });
+  } catch (error) {
+    console.error("Gagal load saiz:", error);
+    updateItemById(itemId, {
+      availableSizes: [],
+    });
+  }
+}
 
         const normalizedMaterial = material.toLowerCase();
 
@@ -965,6 +1002,8 @@
           if (field === "material") {
             return {
               material: value,
+              saiz: "",
+              availableSizes: [],
               balance: null,
               balanceUnit: "",
               balanceStatus: "idle",
