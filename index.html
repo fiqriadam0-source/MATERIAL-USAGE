@@ -1206,9 +1206,20 @@
                     value={item.material}
                     options={materials}
                     onChange={(value) => {
-                      updateItem(item.id, "material", value);
-                      scheduleBalanceLookup(item.id, value);
-                    }}
+  updateItem(item.id, "material", value);
+
+  // Reset saiz & senarai saiz bila tukar bahan
+  updateItemById(item.id, {
+    saiz: "",
+    availableSizes: [],
+  });
+
+  // Load saiz baru
+  fetchSizesByMaterial(item.id, value);
+
+  // Semak baki
+  scheduleBalanceLookup(item.id, value);
+}}
                     placeholder="Pilih atau taip nama Bahan"
                   />
                   <div className="qty-cell">
@@ -1221,14 +1232,21 @@
                       required
                     />
                     <select
-                      value={item.saiz}
-                      onChange={(event) => updateItem(item.id, "saiz", event.target.value)}
-                    >
-                      <option value="">Pilih Saiz</option>
-                      {SIZE_OPTIONS.map((size) => (
-                        <option key={size} value={size}>{size}</option>
-                      ))}
-                    </select>
+  value={item.saiz}
+  onChange={(event) => updateItem(item.id, "saiz", event.target.value)}
+  disabled={!item.material || item.availableSizes.length === 0}
+>
+  <option value="">
+    {!item.material
+      ? "Pilih bahan dulu"
+      : item.availableSizes.length === 0
+      ? "Tiada saiz"
+      : "Pilih Saiz"}
+  </option>
+  {item.availableSizes.map((size) => (
+    <option key={size} value={size}>{size}</option>
+  ))}
+</select>
                     {item.material.trim() && item.balanceStatus === "loading" && (
                       <div className="balance-note balance-loading">Menyemak baki semasa...</div>
                     )}
