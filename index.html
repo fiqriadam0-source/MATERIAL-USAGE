@@ -480,6 +480,17 @@
       color: #9d3028;
     }
 
+    .size-note {
+      font-size: 0.78rem;
+      line-height: 1.3;
+      font-weight: 600;
+      color: #0f3d57;
+      background: rgba(15, 61, 87, 0.06);
+      padding: 4px 6px;
+      border-radius: 4px;
+      border-left: 2px solid var(--accent);
+    }
+
     @keyframes pageEnter {
       from { opacity: 0; transform: translateY(8px); }
       to { opacity: 1; transform: translateY(0); }
@@ -594,6 +605,7 @@
         availableSizes: [],
         balance: null,
         balanceUnit: "",
+        saiz: "",
         balanceStatus: "idle",
       };
     }
@@ -723,12 +735,12 @@
         };
 
         if (typeof payload === "number") {
-          return { balance: payload, balanceUnit: "" };
+          return { balance: payload, balanceUnit: "", saiz: "" };
         }
 
         if (typeof payload === "string") {
           const parsed = toNumber(payload);
-          return { balance: parsed, balanceUnit: "" };
+          return { balance: parsed, balanceUnit: "", saiz: "" };
         }
 
         if (payload && typeof payload === "object") {
@@ -736,10 +748,11 @@
             payload.balance ?? payload.baki ?? payload.stok ?? payload.stock ?? payload.quantity ?? payload.kuantiti
           );
           const balanceUnit = String(payload.unit ?? "").trim();
-          return { balance, balanceUnit };
+          const saiz = String(payload.saiz ?? "").trim();
+          return { balance, balanceUnit, saiz };
         }
 
-        return { balance: null, balanceUnit: "" };
+        return { balance: null, balanceUnit: "", saiz: "" };
       }
 
       function updateItemById(itemId, updater) {
@@ -876,6 +889,7 @@
           updateItemById(itemId, {
             balance: null,
             balanceUnit: "",
+            saiz: "",
             balanceStatus: "idle",
           });
           return;
@@ -925,6 +939,7 @@
         updateItemById(itemId, {
           balance: null,
           balanceUnit: "",
+          saiz: "",
           balanceStatus: "loading",
         });
 
@@ -946,7 +961,7 @@
             }
           }
 
-          const { balance, balanceUnit } = parseBalancePayload(payload);
+          const { balance, balanceUnit, saiz } = parseBalancePayload(payload);
           if (!Number.isFinite(balance)) {
             throw new Error("Balance format not supported");
           }
@@ -963,6 +978,7 @@
                 ...item,
                 balance,
                 balanceUnit,
+                saiz,
                 balanceStatus: "ok",
               };
             })
@@ -980,6 +996,7 @@
                 ...item,
                 balance: null,
                 balanceUnit: "",
+                saiz: "",
                 balanceStatus: "error",
               };
             })
@@ -1006,6 +1023,7 @@
               availableSizes: [],
               balance: null,
               balanceUnit: "",
+              saiz: "",
               balanceStatus: "idle",
             };
           }
@@ -1251,9 +1269,16 @@
                       <div className="balance-note balance-loading">Menyemak baki semasa...</div>
                     )}
                     {item.material.trim() && item.balanceStatus === "ok" && (
-                      <div className={`balance-note ${Number(item.kuantiti || 0) > item.balance ? "balance-warning" : "balance-ok"}`}>
-                        Baki tersedia: {item.balance} {item.balanceUnit || item.unit || ""}
-                      </div>
+                      <>
+                        <div className={`balance-note ${Number(item.kuantiti || 0) > item.balance ? "balance-warning" : "balance-ok"}`}>
+                          Baki tersedia: {item.balance} {item.balanceUnit || item.unit || ""}
+                        </div>
+                        {item.saiz && (
+                          <div className="size-note">
+                            📏 Saiz: {item.saiz}
+                          </div>
+                        )}
+                      </>
                     )}
                     {item.material.trim() && item.balanceStatus === "error" && (
                       <div className="balance-note balance-error">Baki tidak dapat disemak secara masa nyata.</div>

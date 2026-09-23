@@ -59,6 +59,25 @@ function doGet(e) {
     return ContentService.createTextOutput(JSON.stringify(data))
              .setMimeType(ContentService.MimeType.JSON);
   }
+  if (e.parameter.action === "getMaterialsWithSize") {
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Stock");
+    const data = sheet.getRange("A2:F1000").getValues();
+    
+    var materials = [];
+    for (var i = 0; i < data.length; i++) {
+      var mat = String(data[i][0] || "").trim();
+      var saiz = String(data[i][5] || "").trim();
+      if (mat) {
+        materials.push({
+          nama: mat,
+          saiz: saiz
+        });
+      }
+    }
+    
+    return ContentService.createTextOutput(JSON.stringify(materials))
+             .setMimeType(ContentService.MimeType.JSON);
+  }
   if (e.parameter.action === "getBalanceByMaterial") {
   var material = (e.parameter.material || "").trim();
 
@@ -74,7 +93,9 @@ function doGet(e) {
     if (String(data[i][0]).trim().toLowerCase() === material.toLowerCase()) {
       return ContentService.createTextOutput(JSON.stringify({
         material: data[i][0],
-        baki: data[i][3]
+        baki: data[i][3],
+        unit: String(data[i][4] || "").trim(),
+        saiz: String(data[i][5] || "").trim()
       })).setMimeType(ContentService.MimeType.JSON);
     }
   }
