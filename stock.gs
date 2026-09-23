@@ -45,65 +45,125 @@ function checkStockAlert() {
     UrlFetchApp.fetch(url);
   }
 }
+function splitMaterialLabel(label) {
+  var raw = String(label || "").trim();
+  if (!raw) {
+    return { material: "", size: "" };
+  }
+
+  var markers = [" | ", " - ", " / ", " :: "];
+  for (var j = 0; j < markers.length; j++) {
+    var marker = markers[j];
+    var idx = raw.indexOf(marker);
+    if (idx > -1) {
+      return {
+        material: raw.slice(0, idx).trim(),
+        size: raw.slice(idx + marker.length).trim()
+      };
+    }
+  }
+
+  return { material: raw, size: "" };
+}
+
 // ======================
 // doGet
 // ======================
 function doGet(e) {
   if (e.parameter.action === "getMaterials") {
-    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Stock");  // Nama sheet anda
-    const data = sheet.getRange("A2:A1000").getValues()   // Ambil sehingga row 1000
-                     .flat()
-                     .filter(String)                       // Buang kosong
-                     .map(item => item.toString().trim());
-    
-    return ContentService.createTextOutput(JSON.stringify(data))
-             .setMimeType(ContentService.MimeType.JSON);
-  }
-  if (e.parameter.action === "getMaterialsWithSize") {
     const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Stock");
-    const data = sheet.getRange("A2:F1000").getValues();
-    
-    var materials = [];
-    for (var i = 0; i < data.length; i++) {
-      var mat = String(data[i][0] || "").trim();
-      var saiz = String(data[i][5] || "").trim();
-      if (mat) {
-        materials.push({
-          nama: mat,
-          saiz: saiz
-        });
+    const data = sheet.getDataRange().getValues();
+
+    var items = [];
+    var seen = {};
+
+    for (var i = 1; i < data.length; i++) {
+      var materialName = String(data[i][0] || "").trim();
+      var sizeValue = String(data[i][5] || "").trim();
+
+      if (!materialName) continue;
+
+      var label = sizeValue ? materialName + " | " + sizeValue : materialName;
+      var key = (materialName + "||" + sizeValue).toLowerCase();
+
+      if (!seen[key]) {
+        items.push(label);
+        seen[key] = true;
       }
     }
-    
-    return ContentService.createTextOutput(JSON.stringify(materials))
-             .setMimeType(ContentService.MimeType.JSON);
-  }
-  if (e.parameter.action === "getBalanceByMaterial") {
-  var material = (e.parameter.material || "").trim();
 
-  if (!material) {
-    return ContentService.createTextOutput(JSON.stringify({ error: "Material tidak dinyatakan" }))
+    return ContentService.createTextOutput(JSON.stringify(items.sort()))
              .setMimeType(ContentService.MimeType.JSON);
   }
 
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Stock");
-  const data = sheet.getDataRange().getValues();
-
-  for (var i = 1; i < data.length; i++) {
-    if (String(data[i][0]).trim().toLowerCase() === material.toLowerCase()) {
-      return ContentService.createTextOutput(JSON.stringify({
-        material: data[i][0],
-        baki: data[i][3],
-        unit: String(data[i][4] || "").trim(),
-        saiz: String(data[i][5] || "").trim()
-      })).setMimeType(ContentService.MimeType.JSON);
+  if (e.parameter.action === "getSizesByMaterial") {
+    var material = (e.parameter.material || "").trim();
+    if (!material) {
+      return ContentService.createTextOutput(JSON.stringify([]))
+               .setMimeType(ContentService.MimeType.JSON);
     }
+
+    var materialInfo = splitMaterialLabel(material);
+    var baseMaterial = materialInfo.material || material;
+
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Stock");
+    const data = sheet.getDataRange().getValues();
+    var sizes = [];
+    var seen = {};
+
+    for (var i = 1; i < data.length; i++) {
+      var rowMaterial = String(data[i][0] || "").trim();
+      var rowSize = String(data[i][5] || "").trim();
+
+      if (rowMaterial.toLowerCase() === baseMaterial.toLowerCase() && rowSize) {
+        var key = rowSize.toLowerCase();
+        if (!seen[key]) {
+          sizes.push(rowSize);
+          seen[key] = true;
+        }
+      }
+    }
+
+    return ContentService.createTextOutput(JSON.stringify(sizes))
+             .setMimeType(ContentService.MimeType.JSON);
   }
 
-  return ContentService.createTextOutput(JSON.stringify({ error: "Material tidak dijumpai" }))
-           .setMimeType(ContentService.MimeType.JSON);
-}
-if (e.parameter.action === "getUsageHistory") {
+  if (e.parameter.action === "getBalanceByMaterial") {
+    var material = (e.parameter.material || "").trim();
+
+    if (!material) {
+      return ContentService.createTextOutput(JSON.stringify({ error: "Material tidak dinyatakan" }))
+               .setMimeType(ContentService.MimeType.JSON);
+    }
+
+    var materialInfo = splitMaterialLabel(material);
+    var materialName = materialInfo.material || material;
+    var targetSize = materialInfo.size || "";
+
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Stock");
+    const data = sheet.getDataRange().getValues();
+
+    for (var i = 1; i < data.length; i++) {
+      var rowMaterial = String(data[i][0] || "").trim();
+      var rowSize = String(data[i][5] || "").trim();
+      var sameName = rowMaterial.toLowerCase() === materialName.toLowerCase();
+      var sameSize = !targetSize || rowSize.toLowerCase() === targetSize.toLowerCase();
+
+      if (sameName && sameSize) {
+        return ContentService.createTextOutput(JSON.stringify({
+          material: rowMaterial,
+          baki: data[i][3],
+          unit: String(data[i][4] || "").trim(),
+          saiz: rowSize
+        })).setMimeType(ContentService.MimeType.JSON);
+      }
+    }
+
+    return ContentService.createTextOutput(JSON.stringify({ error: "Material tidak dijumpai" }))
+             .setMimeType(ContentService.MimeType.JSON);
+  }
+
+  if (e.parameter.action === "getUsageHistory") {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("MaterialUsage");
   const data = sheet.getDataRange().getValues();
 
@@ -145,6 +205,7 @@ function doPost(e) {
     if (type === "restock") {
       var material = (e.parameter.material || "").trim();
       var kuantiti = Number(e.parameter.kuantiti) || 0;
+      var targetSize = (e.parameter.saiz || "").trim();
 
       if (!material || kuantiti <= 0) {
         return ContentService.createTextOutput("Error: Data restock tidak lengkap");
@@ -154,18 +215,25 @@ function doPost(e) {
       var stockSheet = ss.getSheetByName("Stock");
       var restockSheet = ss.getSheetByName("Restock");
 
+      var materialInfo = splitMaterialLabel(material);
+      var materialName = materialInfo.material || material;
       var data = stockSheet.getDataRange().getValues();
 
       for (var i = 1; i < data.length; i++) {
-        if (String(data[i][0]).trim() === material) {
+        var rowMaterial = String(data[i][0] || "").trim();
+        var rowSize = String(data[i][5] || "").trim();
+        var sameName = rowMaterial.toLowerCase() === materialName.toLowerCase();
+        var sameSize = !targetSize || !rowSize || rowSize.toLowerCase() === targetSize.toLowerCase();
+
+        if (sameName && sameSize) {
           var stokAwalBaru = Number(data[i][1]) + kuantiti;
           var bakiBaru     = Number(data[i][3]) + kuantiti;
 
           stockSheet.getRange(i + 1, 2).setValue(stokAwalBaru);
           stockSheet.getRange(i + 1, 4).setValue(bakiBaru);
 
-          restockSheet.appendRow([new Date(), material, kuantiti]);
-          sendTelegramRestock(material, kuantiti);
+          restockSheet.appendRow([new Date(), materialName, kuantiti, targetSize || rowSize]);
+          sendTelegramRestock(materialName + (targetSize ? " (" + targetSize + ")" : ""), kuantiti);
 
           return ContentService.createTextOutput("Restock Success");
         }
@@ -203,6 +271,10 @@ function doPost(e) {
       var material = (item.material || "").trim();
       var kuantiti = Number(item.kuantiti) || 0;
       var unit     = (item.unit || "").trim();
+      var itemSize = String(item.saiz || "").trim();
+      var materialInfo = splitMaterialLabel(material);
+      var materialName = materialInfo.material || material;
+      var targetSize = itemSize || materialInfo.size || "";
 
       if (!material || kuantiti <= 0) {
         return ContentService.createTextOutput("Error: Data tidak lengkap untuk " + material);
@@ -211,21 +283,26 @@ function doPost(e) {
       var found = false;
 
       for (var i = 1; i < stockData.length; i++) {
-        if (String(stockData[i][0]).trim() === material) {
+        var rowMaterial = String(stockData[i][0] || "").trim();
+        var rowSize = String(stockData[i][5] || "").trim();
+        var sameName = rowMaterial.toLowerCase() === materialName.toLowerCase();
+        var sameSize = !targetSize || (rowSize && rowSize.toLowerCase() === targetSize.toLowerCase());
+
+        if (sameName && sameSize) {
 
           var stokAwal     = Number(stockData[i][1]) || 0;
           var stokDigunakan = Number(stockData[i][2]) || 0;
           var baki         = Number(stockData[i][3]) || 0;
 
           if (baki <= 0) {
-            sendTelegramOutOfStock(material);
-            return ContentService.createTextOutput(`❌ STOK TELAH HABIS!\nMaterial: ${material}`);
+            sendTelegramOutOfStock(materialName + (targetSize ? " (" + targetSize + ")" : ""));
+            return ContentService.createTextOutput(`❌ STOK TELAH HABIS!\nMaterial: ${materialName}${targetSize ? " | " + targetSize : ""}`);
           }
 
           if (kuantiti > baki) {
-            sendTelegramAlert(material, baki);
+            sendTelegramAlert(materialName + (targetSize ? " (" + targetSize + ")" : ""), baki);
             return ContentService.createTextOutput(
-              `❌ STOK TIDAK CUKUP!\nMaterial: ${material}\nBaki: ${baki}\nDiminta: ${kuantiti}`
+              `❌ STOK TIDAK CUKUP!\nMaterial: ${materialName}${targetSize ? " | " + targetSize : ""}\nBaki: ${baki}\nDiminta: ${kuantiti}`
             );
           }
 
@@ -237,11 +314,11 @@ function doPost(e) {
           stockSheet.getRange(i + 1, 4).setValue(baki);
 
           // Rekod ke sheet
-          usageSheet.appendRow([timestamp, nama, material, kuantiti, unit, tujuan]);
+          usageSheet.appendRow([timestamp, nama, materialName, kuantiti, unit, tujuan]);
 
           // Alert stok rendah selepas pinjam
           if (baki <= 10 && baki > 0) {
-            sendTelegramAlert(material, baki);
+            sendTelegramAlert(materialName + (targetSize ? " (" + targetSize + ")" : ""), baki);
           }
 
           found = true;
@@ -250,7 +327,7 @@ function doPost(e) {
       }
 
       if (!found) {
-        return ContentService.createTextOutput(`Error: Material "${material}" tidak dijumpai`);
+        return ContentService.createTextOutput(`Error: Material "${materialName}${targetSize ? " | " + targetSize : ""}" tidak dijumpai`);
       }
     }
 

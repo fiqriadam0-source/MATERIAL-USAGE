@@ -592,6 +592,26 @@
 
     const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxjjcdTsySzhP3qtqAg7KnKgzFSneqRYGnqChnaLhhL0xzibdRTaey62oHMWbFHKT4q/exec";
 
+    function extractMaterialParts(label) {
+      const raw = String(label || "").trim();
+      if (!raw) {
+        return { material: "", size: "" };
+      }
+
+      const markers = [" | ", " - ", " / ", " :: "];
+      for (const marker of markers) {
+        const index = raw.indexOf(marker);
+        if (index > -1) {
+          return {
+            material: raw.slice(0, index).trim(),
+            size: raw.slice(index + marker.length).trim(),
+          };
+        }
+      }
+
+      return { material: raw, size: "" };
+    }
+
     let rowCounter = 0;
 
     function createEmptyItem() {
@@ -605,7 +625,6 @@
         availableSizes: [],
         balance: null,
         balanceUnit: "",
-        saiz: "",
         balanceStatus: "idle",
       };
     }
@@ -883,6 +902,50 @@
         };
       }, []);
 
+      async function fetchSizesByMaterial(itemId, materialName) {
+        const material = String(materialName || "").trim();
+
+        updateItemById(itemId, {
+          saiz: "",
+          availableSizes: [],
+        });
+
+        if (!material) {
+          return;
+        }
+
+        const { material: baseMaterial } = extractMaterialParts(material);
+        const lookupName = baseMaterial || material;
+
+        try {
+          const response = await fetch(
+            `${WEB_APP_URL}?action=getSizesByMaterial&material=${encodeURIComponent(lookupName)}`
+          );
+
+          let payload;
+          const contentType = response.headers.get("content-type") || "";
+          if (contentType.includes("application/json")) {
+            payload = await response.json();
+          } else {
+            const text = await response.text();
+            try {
+              payload = JSON.parse(text);
+            } catch {
+              payload = text;
+            }
+          }
+
+          const sizes = Array.isArray(payload)
+            ? payload.map((size) => String(size || "").trim()).filter(Boolean)
+            : [];
+
+          updateItemById(itemId, { availableSizes: sizes });
+        } catch (error) {
+          console.error("Gagal load saiz:", error);
+          updateItemById(itemId, { availableSizes: [] });
+        }
+      }
+
       async function fetchItemBalance(itemId, materialName) {
         const material = String(materialName || "").trim();
         if (!material) {
@@ -894,47 +957,9 @@
           });
           return;
         }
-        async function fetchSizesByMaterial(itemId, materialName) {
-  const material = String(materialName || "").trim();
-  
-  // Reset saiz & availableSizes
-  updateItemById(itemId, {
-    saiz: "",
-    availableSizes: [],
-  });
 
-  if (!material) return;
-
-  try {
-    const response = await fetch(
-      `\( {WEB_APP_URL}?action=getSizesByMaterial&material= \){encodeURIComponent(material)}`
-    );
-
-    let payload;
-    const contentType = response.headers.get("content-type") || "";
-    if (contentType.includes("application/json")) {
-      payload = await response.json();
-    } else {
-      const text = await response.text();
-      payload = JSON.parse(text);
-    }
-
-    const sizes = Array.isArray(payload)
-      ? payload.map(s => String(s || "").trim()).filter(Boolean)
-      : [];
-
-    updateItemById(itemId, {
-      availableSizes: sizes,
-    });
-  } catch (error) {
-    console.error("Gagal load saiz:", error);
-    updateItemById(itemId, {
-      availableSizes: [],
-    });
-  }
-}
-
-        const normalizedMaterial = material.toLowerCase();
+        const { material: baseMaterial } = extractMaterialParts(material);
+        const normalizedMaterial = (baseMaterial || material).toLowerCase();
 
         updateItemById(itemId, {
           balance: null,
@@ -971,14 +996,14 @@
               if (item.id !== itemId) {
                 return item;
               }
-              if (String(item.material || "").trim().toLowerCase() !== normalizedMaterial) {
+              if ((extractMaterialParts(String(item.material || "")).material || "").toLowerCase() !== normalizedMaterial) {
                 return item;
               }
               return {
                 ...item,
                 balance,
                 balanceUnit,
-                saiz,
+                saiz: saiz || item.saiz,
                 balanceStatus: "ok",
               };
             })
@@ -989,7 +1014,7 @@
               if (item.id !== itemId) {
                 return item;
               }
-              if (String(item.material || "").trim().toLowerCase() !== normalizedMaterial) {
+              if ((extractMaterialParts(String(item.material || "")).material || "").toLowerCase() !== normalizedMaterial) {
                 return item;
               }
               return {
@@ -1023,7 +1048,6 @@
               availableSizes: [],
               balance: null,
               balanceUnit: "",
-              saiz: "",
               balanceStatus: "idle",
             };
           }
