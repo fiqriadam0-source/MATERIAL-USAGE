@@ -946,7 +946,7 @@
         }
       }
 
-      async function fetchItemBalance(itemId, materialName) {
+      async function fetchItemBalance(itemId, materialName, sizeName = "") {
         const material = String(materialName || "").trim();
         if (!material) {
           updateItemById(itemId, {
@@ -964,14 +964,19 @@
         updateItemById(itemId, {
           balance: null,
           balanceUnit: "",
-          saiz: "",
+          saiz: sizeName || "",
           balanceStatus: "loading",
         });
 
         try {
-          const response = await fetch(
-            `${WEB_APP_URL}?action=getBalanceByMaterial&material=${encodeURIComponent(material)}`
-          );
+          const url = new URL(`${WEB_APP_URL}`);
+          url.searchParams.set("action", "getBalanceByMaterial");
+          url.searchParams.set("material", material);
+          if (sizeName) {
+            url.searchParams.set("saiz", sizeName);
+          }
+
+          const response = await fetch(url.toString());
 
           let payload;
           const contentType = response.headers.get("content-type") || "";
@@ -1003,7 +1008,7 @@
                 ...item,
                 balance,
                 balanceUnit,
-                saiz: saiz || item.saiz,
+                saiz: saiz || sizeName || item.saiz,
                 balanceStatus: "ok",
               };
             })
@@ -1021,7 +1026,7 @@
                 ...item,
                 balance: null,
                 balanceUnit: "",
-                saiz: "",
+                saiz: sizeName || item.saiz || "",
                 balanceStatus: "error",
               };
             })
@@ -1029,13 +1034,13 @@
         }
       }
 
-      function scheduleBalanceLookup(itemId, materialName) {
+      function scheduleBalanceLookup(itemId, materialName, sizeName = "") {
         if (balanceDebounceRef.current[itemId]) {
           clearTimeout(balanceDebounceRef.current[itemId]);
         }
 
         balanceDebounceRef.current[itemId] = setTimeout(() => {
-          fetchItemBalance(itemId, materialName);
+          fetchItemBalance(itemId, materialName, sizeName);
         }, 360);
       }
 
@@ -1250,17 +1255,13 @@
                     onChange={(value) => {
   updateItem(item.id, "material", value);
 
-  // Reset saiz & senarai saiz bila tukar bahan
   updateItemById(item.id, {
     saiz: "",
     availableSizes: [],
   });
 
-  // Load saiz baru
   fetchSizesByMaterial(item.id, value);
-
-  // Semak baki
-  scheduleBalanceLookup(item.id, value);
+  scheduleBalanceLookup(item.id, value, "");
 }}
                     placeholder="Pilih atau taip nama Bahan"
                   />
@@ -1275,7 +1276,13 @@
                     />
                     <select
   value={item.saiz}
-  onChange={(event) => updateItem(item.id, "saiz", event.target.value)}
+  onChange={(event) => {
+    const nextSize = event.target.value;
+    updateItem(item.id, "saiz", nextSize);
+    if (item.material) {
+      scheduleBalanceLookup(item.id, item.material, nextSize);
+    }
+  }}
   disabled={!item.material || item.availableSizes.length === 0}
 >
   <option value="">

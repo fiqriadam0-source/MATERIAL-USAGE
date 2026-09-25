@@ -79,15 +79,11 @@ function doGet(e) {
 
     for (var i = 1; i < data.length; i++) {
       var materialName = String(data[i][0] || "").trim();
-      var sizeValue = String(data[i][5] || "").trim();
-
       if (!materialName) continue;
 
-      var label = sizeValue ? materialName + " | " + sizeValue : materialName;
-      var key = (materialName + "||" + sizeValue).toLowerCase();
-
+      var key = materialName.toLowerCase();
       if (!seen[key]) {
-        items.push(label);
+        items.push(materialName);
         seen[key] = true;
       }
     }
@@ -103,9 +99,6 @@ function doGet(e) {
                .setMimeType(ContentService.MimeType.JSON);
     }
 
-    var materialInfo = splitMaterialLabel(material);
-    var baseMaterial = materialInfo.material || material;
-
     const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Stock");
     const data = sheet.getDataRange().getValues();
     var sizes = [];
@@ -115,7 +108,7 @@ function doGet(e) {
       var rowMaterial = String(data[i][0] || "").trim();
       var rowSize = String(data[i][5] || "").trim();
 
-      if (rowMaterial.toLowerCase() === baseMaterial.toLowerCase() && rowSize) {
+      if (rowMaterial.toLowerCase() === material.toLowerCase() && rowSize) {
         var key = rowSize.toLowerCase();
         if (!seen[key]) {
           sizes.push(rowSize);
@@ -130,15 +123,12 @@ function doGet(e) {
 
   if (e.parameter.action === "getBalanceByMaterial") {
     var material = (e.parameter.material || "").trim();
+    var targetSize = (e.parameter.saiz || "").trim();
 
     if (!material) {
       return ContentService.createTextOutput(JSON.stringify({ error: "Material tidak dinyatakan" }))
                .setMimeType(ContentService.MimeType.JSON);
     }
-
-    var materialInfo = splitMaterialLabel(material);
-    var materialName = materialInfo.material || material;
-    var targetSize = materialInfo.size || "";
 
     const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Stock");
     const data = sheet.getDataRange().getValues();
@@ -146,7 +136,7 @@ function doGet(e) {
     for (var i = 1; i < data.length; i++) {
       var rowMaterial = String(data[i][0] || "").trim();
       var rowSize = String(data[i][5] || "").trim();
-      var sameName = rowMaterial.toLowerCase() === materialName.toLowerCase();
+      var sameName = rowMaterial.toLowerCase() === material.toLowerCase();
       var sameSize = !targetSize || rowSize.toLowerCase() === targetSize.toLowerCase();
 
       if (sameName && sameSize) {
@@ -306,17 +296,14 @@ function doPost(e) {
             );
           }
 
-          // Update stok
           stokDigunakan += kuantiti;
           baki = stokAwal - stokDigunakan;
 
           stockSheet.getRange(i + 1, 3).setValue(stokDigunakan);
           stockSheet.getRange(i + 1, 4).setValue(baki);
 
-          // Rekod ke sheet
           usageSheet.appendRow([timestamp, nama, materialName, kuantiti, unit, tujuan]);
 
-          // Alert stok rendah selepas pinjam
           if (baki <= 10 && baki > 0) {
             sendTelegramAlert(materialName + (targetSize ? " (" + targetSize + ")" : ""), baki);
           }
